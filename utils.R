@@ -33,35 +33,58 @@ plot.montecarlo.CIs <- function(p,n.sim,CIs,p.insides,method) {
            col = colori, lwd = 2)
 }
 
-plot.heatmap.results <- function(matrice, n_vec, nsim_vec,p,method) {
-  par(mar = c(5, 5, 4, 2)) 
+plot.heatmap.results <- function(matrice, n_vec, nsim_vec, p, method) {
+  # 1. Configurazione Layout
+  layout(matrix(c(1, 2), nrow = 1), widths = c(0.85, 0.15))
   
-  target <- 0.95
-  ampiezza <- 0.05
-  breaks <- seq(target - ampiezza, target + ampiezza, length.out = 101)
-  col_func <- colorRampPalette(c("red", "yellow", "darkgreen", "yellow", "red"))
-  col_palette <- col_func(100)
+  # Margini per il grafico principale
+  par(mar = c(5, 5, 4, 1)) 
   
+  breaks <- seq(0, 1, length.out = 101)
+  
+  # Palette personalizzata (70% rosso/arancio, poi transizione al verde)
+  c1 <- colorRampPalette(c("red", "red", "darkorange"))(70)
+  c2 <- colorRampPalette(c("darkorange", "greenyellow"))(20)
+  c3 <- colorRampPalette(c("greenyellow", "darkgreen"))(5)
+  c4 <- colorRampPalette(c("darkgreen", "lawngreen"))(5)
+  col_palette <- c(c1, c2, c3, c4)
+  
+  # 2. Disegno della Heatmap principale
   image(1:nrow(matrice), 1:ncol(matrice), matrice, 
         col = col_palette, 
         breaks = breaks,
         axes = FALSE, 
         xlab = "nsim", 
         ylab = "n",
-        main = paste0("CI actual covarage (Target 0.95) for p = ",p,"\n",method))
+        # MODIFICA: cex.main riduce la dimensione del titolo (0.8 è l'80% del default)
+        main = paste0("CI actual coverage (Target 0.95) for p = ", p, "\n", method),
+        cex.main = 0.9) 
   
   axis(1, at = 1:nrow(matrice), labels = nsim_vec, las = 1, cex.axis = 0.9)
   axis(2, at = 1:ncol(matrice), labels = n_vec, las = 1, cex.axis = 0.9)
   
-
   for (i in 1:nrow(matrice)) {
     for (j in 1:ncol(matrice)) {
       valore <- round(matrice[i, j], 3)
-      text(i, j, labels = valore, font = 2, cex = 0.8)
+      text_col <- "black"
+      text(i, j, labels = valore, font = 2, cex = 0.8, col = text_col)
     }
   }
+  box(lwd = 1.5)
   
-  box(lwd = 1.5) 
+  # 3. Disegno della Legenda (Color Bar)
+  par(mar = c(5, 1, 4, 3))
+  legend_image <- as.matrix(seq(0, 1, length.out = 100))
+  
+  image(x = 1, y = breaks, z = t(legend_image), 
+        col = col_palette, 
+        breaks = breaks,
+        axes = FALSE, xlab = "", ylab = "")
+  
+  axis(4, at = seq(0, 1, by = 0.1), las = 1, cex.axis = 0.8)
+  abline(h = 0.95, col = "white", lwd = 2, lty = 2)
+  
+  layout(1) 
 }
 
 
