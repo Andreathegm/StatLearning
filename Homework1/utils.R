@@ -133,5 +133,37 @@ wald.conf.int <- function(p.hat,quantile,n){
   CI.upper <- p.hat + (quantile*(sqrt(var.p.hat)))
   return (c(CI.lower,CI.upper))
 }
+
+plot.actual.coverage <- function(ps, ys, ylim, title, nominal.level) {
+  par(mar = c(5, 5, 4, 2))
+  plot(ps, ys,
+       type = "l",
+       col = "blue",
+       lwd = 1.5,
+       xlab = "p",
+       ylab = "Actual cover probability",
+       main = title,
+       ylim = ylim,
+       xaxt = "n", 
+       yaxt = "n") 
+  
+  # Asse X
+  axis(1, at = seq(0, 1, by = 0.05), labels = FALSE)
+  etichette_x <- seq(0, 0.9, by = 0.15)
+  axis(1, at = etichette_x, 
+       labels = sprintf("%.2f", etichette_x), 
+       tick = FALSE) 
+  
+  # Asse Y 
+  axis(2, at = c(0.9, 1.0), 
+       labels = c("0.9", "1.0"), 
+       las = 1)
+  
+  # Linea tratteggiata
+  abline(h = nominal.level,
+         col = "red",
+         lwd = 1.5,
+         lty = 2)
+}
   
 
