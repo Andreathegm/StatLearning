@@ -133,5 +133,6 @@ wald.conf.int <- function(p.hat,quantile,n){
   CI.upper <- p.hat + (quantile*(sqrt(var.p.hat)))
   return (c(CI.lower,CI.upper))
 }
+
   
 
