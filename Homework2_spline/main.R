@@ -1,48 +1,39 @@
-install.packages("palmerpenguins")
-install.packages("ggeffects")
-require(palmerpenguins)
-require(ggeffects)
 library(ggplot2)
+require(MASS)
+library(gam)
+library(splines)
 
 
-data <- penguins
-data_pulito <- na.omit(data)
+
+data(Boston,package = "MASS")
+summary(Boston)
+data_pulito <- na.omit(Boston)
 summary(data_pulito)
 
-data("penguins")
+
+modello_regressione_full <- lm(rm ~ . , data =  data_pulito)
 
 
-modello_logistico_wo_year <- glm(sex ~ . - year,
-                         data =  data_pulito,
-                         family = binomial)
-summary(modello_logistico)
+step_aic <- stepAIC(modello_regressione_full, direction = "backward")
+class(step_aic)
+summary(step_aic)
 
-
-modello_logistico_wo_y_i <- glm(sex ~ . - year -island,
-                                 data =  data_pulito,
-                                 family = binomial)
-
-effetti <- ggpredict(modello_logistico_wo_y_i)
-
-plot(effetti)
-
-summary(modello_logistico_wo_y_i)
+qqnorm(residuals(step_aic))
+qqline(residuals(step_aic), col = "red")
 
 
 
 
-# 6. Calcolo degli Odds Ratio (per un'interpretazione più semplice)
-# Un OR > 1 indica che all'aumentare della variabile aumentano le probabilità
-print("Odds Ratio:")
-exp(coef(modello_logistico_wo_y_i))
+fit_gam <- gam(rm ~ s(zn, 3) + ns(indus, 3) + ns(age, 3) + 
+                 ns(rad, 3) + ns(black, 3) + 
+                 ns(lstat, 3) + ns(medv, 3), 
+               data = data_pulito)
+class(fit_gam)
 
-penguins_clean$probabilita_predetta <- predict(modello_logistico, type = "response")
+termplot(step_aic,se = TRUE, partial.resid = TRUE)
 
-# 8. Visualizzazione (Opzionale)
-# Creiamo un grafico per vedere come il modello separa le specie
-ggplot(penguins_clean, aes(x = body_mass_g, y = probabilita_predetta, color = species)) +
-  geom_point(alpha = 0.5) +
-  labs(title = "Probabilità di essere Gentoo in base alla massa corporea",
-       y = "Probabilità Predetta",
-       x = "Massa Corporea (g)") +
-  theme_minimal()
+qqnorm(residuals(fit_gam))
+qqline(residuals(fit_gam), col = "red")
+
+plot(fit_gam,residuals = TRUE,pch = 16,col = "#905E9F",se = TRUE)
+summary(fit_gam)
