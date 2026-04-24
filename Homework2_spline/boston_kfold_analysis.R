@@ -356,6 +356,64 @@ crea_boxplot_confronto <- function(lista_mse, titolo = "Confronto MSE - K-Fold C
   return(grafico)
 }
 
+# Testa tutti i df da 3 a max_df e restituisce la media MSE per ognuno
+evaluate_df <- function(max_df, dati, fold_vettore, response, vars_ns, vars_bs, K) {
+  
+  mse_per_df <- c()   # vettore vuoto, lo riempiamo ad ogni iterazione
+  
+  for (i in 3:max_df) {   # le {} racchiudono TUTTO il corpo del loop
+    
+    mse_spline <- kfold_spline(
+      dati         = dati,        # usa il parametro, non la variabile globale
+      fold_vettore = fold_vettore,
+      var_y        = response,
+      vars_ns      = vars_ns,
+      vars_bs      = vars_bs,
+      vars_lineari = NULL,
+      df_spline    = i,
+      K            = K
+    )
+    
+    mse_per_df <- c(mse_per_df, mean(mse_spline))  # append la media di questo df
+  }
+  
+  return(mse_per_df)  # restituisce un vettore lungo (max_df - 2)
+}
+
+
+# Plotta MSE medio (y) al variare del df della spline (x)
+plot_mse_vs_df <- function(mse_per_df, max_df) {
+  
+  # Costruiamo il dataframe per ggplot:
+  # df_values = 3, 4, 5, ..., max_df  (i gradi testati)
+  # mse_values = la media MSE corrispondente
+  df_plot <- data.frame(
+    df_values  = 3:max_df,
+    mse_values = mse_per_df
+  )
+  
+  grafico <- ggplot(df_plot, aes(x = df_values, y = mse_values)) +
+    geom_line(color = "steelblue", linewidth = 1) +   # linea che collega i punti
+    geom_point(color = "steelblue", size = 3) +        # un punto per ogni df testato
+    # geom_vline traccia una linea verticale sul df con MSE minimo
+    geom_vline(xintercept = df_plot$df_values[ which.min(df_plot$mse_values) ],
+               linetype = "dashed", color = "red") +
+    # which.min() restituisce l'indice del valore minimo nel vettore
+    labs(
+      title   = "MSE medio al variare del df della spline",
+      x       = "Degrees of Freedom (df)",
+      y       = "MSE medio (K-Fold CV)",
+      caption = "Linea rossa tratteggiata = df ottimale (MSE minimo)"
+    ) +
+    scale_x_continuous(breaks = 3:max_df) +  # un tick per ogni df testato
+    theme_minimal(base_size = 13) +
+    theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+  
+  return(grafico)
+}
+
+# --- Chiamata nel main ---
+
 
 # =============================================================================
 # SCRIPT PRINCIPALE
@@ -459,5 +517,22 @@ grafico <- crea_boxplot_confronto(
 )
 
 print(grafico)
+
+max_df <- 9
+
+mse_per_df <- evaluate_df(
+  max_df       = max_df,
+  dati         = train,
+  fold_vettore = fold_vettore,
+  response     = response,
+  vars_ns      = vars_ns,
+  vars_bs      = vars_bs,
+  K            = K
+)
+
+cat("df ottimale:", which.min(mse_per_df) + 2, "\n")
+
+grafico_df <- plot_mse_vs_df(mse_per_df, max_df)
+print(grafico_df)
 
 cat("\n✓ Analisi completata!\n")
