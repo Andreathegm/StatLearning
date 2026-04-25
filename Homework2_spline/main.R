@@ -30,7 +30,7 @@ fit_gam <- gam(rm ~ s(zn, 3) + ns(indus, 3) + ns(age, 3) +
                data = data_pulito)
 class(fit_gam)
 
-termplot(step_aic,se = TRUE, partial.resid = TRUE)
+termplot(step_aic,se = TRUE, partial.resid = TRUE, col.res = "#905E9F", pch = 16, col.se = "black", col.term = "black" )
 
 qqnorm(residuals(fit_gam))
 qqline(residuals(fit_gam), col = "red")
