@@ -39,4 +39,4 @@ qqline(residuals(fit_gam), col = "red")
 plot(fit_gam,residuals = TRUE,pch = 16,col = "#905E9F",se = TRUE)
 summary(fit_gam)
 
-
+  

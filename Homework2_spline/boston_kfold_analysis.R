@@ -79,23 +79,24 @@ crea_fold <- function(dati, K = 5, seed = 42) {
 
 
 # =============================================================================
-# SEZIONE 3: FUNZIONE DI CALCOLO MSE
+# SEZIONE 3: FUNZIONE DI CALCOLO RMSE
 # =============================================================================
 
 #' Calcola il Mean Squared Error (Errore Quadratico Medio)
 #'
-#' MSE = media di (y_reale - y_predetto)^2
+#' RMSE = media di (y_reale - y_predetto)^2
 #' Più è basso, meglio il modello ha predetto.
 #'
 #' @param y_reale    Vettore dei valori reali
 #' @param y_predetto Vettore dei valori predetti
 #'
-#' @return Singolo valore numerico: l'MSE
-calcola_mse <- function(y_reale, y_predetto) {
+#' @return Singolo valore numerico: l'RMSE
+calcola_rmse <- function(y_reale, y_predetto) {
   errori          <- y_reale - y_predetto
   errori_quadrati <- errori^2
   mse             <- mean(errori_quadrati)
-  return(mse)
+  rmse            <- sqrt(mse)
+  return(rmse)
 }
 
 
@@ -110,10 +111,10 @@ calcola_mse <- function(y_reale, y_predetto) {
 #' @param formula_modello Formula R (es: rm ~ lstat + crim + ...)
 #' @param K               Numero di fold
 #'
-#' @return Vettore di K valori MSE (uno per fold)
+#' @return Vettore di K valori RMSE (uno per fold)
 kfold_regressione_lineare <- function(dati, fold_vettore, formula_modello, K = 5) {
   
-  mse_per_fold <- numeric(K)
+  rmse_per_fold <- numeric(K)
   
   cat("--- Regressione Lineare: K-Fold CV ---\n")
   cat("  Formula:", deparse(formula_modello), "\n")
@@ -132,13 +133,13 @@ kfold_regressione_lineare <- function(dati, fold_vettore, formula_modello, K = 5
     variabile_risposta <- as.character(formula_modello)[2]
     y_reale <- val_fold[[variabile_risposta]]
     
-    mse_per_fold[k] <- calcola_mse(y_reale, previsioni)
-    cat(sprintf("  Fold %d: MSE = %.4f\n", k, mse_per_fold[k]))
+    rmse_per_fold[k] <- calcola_rmse(y_reale, previsioni)
+    cat(sprintf("  Fold %d: RMSE = %.4f\n", k, rmse_per_fold[k]))
   }
   
-  cat(sprintf("  MEDIA MSE (Reg. Lineare): %.4f\n\n", mean(mse_per_fold)))
+  cat(sprintf("  MEDIA RMSE (Reg. Lineare): %.4f\n\n", mean(rmse_per_fold)))
   
-  return(mse_per_fold)
+  return(rmse_per_fold)
 }
 
 
@@ -208,12 +209,12 @@ costruisci_formula_spline <- function(var_y,
 #' @param df_spline Grado della spline (default: 4)
 #' @param K            Numero di fold
 #'
-#' @return Vettore di K valori MSE (uno per fold)
+#' @return Vettore di K valori RMSE (uno per fold)
 kfold_spline <- function(dati, fold_vettore, var_y,
                          vars_ns, vars_bs = NULL, vars_lineari = NULL,
                          df_spline = 4, K = 5) {
   
-  mse_per_fold <- numeric(K)
+  rmse_per_fold <- numeric(K)
   
   # Costruiamo la formula UNA SOLA VOLTA fuori dal loop:
   # è identica per tutte le fold, non ha senso ricostruirla K volte
@@ -238,13 +239,13 @@ kfold_spline <- function(dati, fold_vettore, var_y,
     
     y_reale <- val_fold[[var_y]]
     
-    mse_per_fold[k] <- calcola_mse(y_reale, previsioni)
-    cat(sprintf("  Fold %d: MSE = %.4f\n", k, mse_per_fold[k]))
+    rmse_per_fold[k] <- calcola_rmse(y_reale, previsioni)
+    cat(sprintf("  Fold %d: RMSE = %.4f\n", k, rmse_per_fold[k]))
   }
   
-  cat(sprintf("  MEDIA MSE (Spline df=%d): %.4f\n\n", df_spline, mean(mse_per_fold)))
+  cat(sprintf("  MEDIA RMSE (Spline df=%d): %.4f\n\n", df_spline, mean(rmse_per_fold)))
   
-  return(mse_per_fold)
+  return(rmse_per_fold)
 }
 
 
@@ -268,7 +269,7 @@ kfold_spline <- function(dati, fold_vettore, var_y,
 #' @param vars_lineari Variabili lineari (solo se tipo="spline", default: NULL)
 #' @param df_spline    Gradi della spline (solo se tipo="spline")
 #'
-#' @return Lista con $modello, $previsioni, $mse_test
+#' @return Lista con $modello, $previsioni, $rmse_test
 valuta_su_test <- function(train, test, tipo_modello, var_y,
                            formula_lm   = NULL,
                            vars_ns      = NULL,
@@ -300,11 +301,11 @@ valuta_su_test <- function(train, test, tipo_modello, var_y,
   }
   
   y_test_reale <- test[[var_y]]
-  mse_test     <- calcola_mse(y_test_reale, previsioni)
+  rmse_test     <- calcola_rmse(y_test_reale, previsioni)
   
-  cat(sprintf("MSE sul TEST set (%s): %.4f\n", tipo_modello, mse_test))
+  cat(sprintf("RMSE sul TEST set (%s): %.4f\n", tipo_modello, rmse_test))
   
-  return(list(modello = modello, previsioni = previsioni, mse_test = mse_test))
+  return(list(modello = modello, previsioni = previsioni, mse_test = rmse_test))
 }
 
 
@@ -312,40 +313,40 @@ valuta_su_test <- function(train, test, tipo_modello, var_y,
 # SEZIONE 8: BOXPLOT DI CONFRONTO
 # =============================================================================
 
-#' Crea un boxplot per confrontare gli MSE delle K fold tra i due modelli
+#' Crea un boxplot per confrontare gli RMSE delle K fold tra i due modelli
 #'
 #' Il boxplot mostra non solo la media ma anche la VARIABILITÀ dell'errore:
-#'   - linea centrale = mediana degli MSE
+#'   - linea centrale = mediana degli RMSE
 #'   - rettangolo     = 50% centrale dei valori (IQR)
 #'   - baffi          = range (esclusi outlier)
-#'   - punti          = i K valori MSE reali (uno per fold)
+#'   - punti          = i K valori RMSE reali (uno per fold)
 #'
-#' @param lista_mse Lista nominata di vettori MSE
+#' @param lista_rmse Lista nominata di vettori RMSE
 #'                  (es: list("Lineare"=vettore, "Spline"=vettore))
 #' @param titolo    Titolo del grafico
 #'
 #' @return Oggetto ggplot
-crea_boxplot_confronto <- function(lista_mse, titolo = "Confronto MSE - K-Fold CV") {
+crea_boxplot_confronto <- function(lista_rmse, titolo = "Confronto RMSE - K-Fold CV") {
   
   # Costruiamo un dataframe in formato "lungo":
-  # una riga per ogni coppia (MSE, nome_modello)
+  # una riga per ogni coppia (RMSE, nome_modello)
   df_plot <- data.frame(
-    MSE     = unlist(lista_mse),
-    Modello = rep(names(lista_mse), sapply(lista_mse, length))
+    RMSE     = unlist(lista_rmse),
+    Modello = rep(names(lista_rmse), sapply(lista_rmse, length))
     # rep() ripete ogni nome tante volte quante sono le fold di quel modello
-    # sapply(lista_mse, length) restituisce il numero di fold per ogni modello
+    # sapply(lista_rmse, length) restituisce il numero di fold per ogni modello
   )
   
-  grafico <- ggplot(df_plot, aes(x = Modello, y = MSE, fill = Modello)) +
+  grafico <- ggplot(df_plot, aes(x = Modello, y = RMSE, fill = Modello)) +
     geom_boxplot(alpha = 0.7, outlier.shape = 16, outlier.size = 2) +
     # geom_jitter sovrappone i punti reali, spostati leggermente in orizzontale
     # per evitare sovrapposizioni (width = ampiezza dello spostamento)
     geom_jitter(width = 0.15, size = 2.5, alpha = 0.8) +
     labs(
       title   = titolo,
-      x       = "Modello",
-      y       = "MSE (Mean Squared Error)",
-      caption = "Ogni punto = MSE di una fold. Modello migliore = MSE più basso."
+      x       = "Model",
+      y       = "RMSE (Mean Squared Error)",
+      #caption = "punto = RMSE di una fold. Modello migliore = RMSE più basso."
     ) +
     theme_minimal(base_size = 13) +
     theme(
@@ -356,14 +357,14 @@ crea_boxplot_confronto <- function(lista_mse, titolo = "Confronto MSE - K-Fold C
   return(grafico)
 }
 
-# Testa tutti i df da 3 a max_df e restituisce la media MSE per ognuno
+# Testa tutti i df da 3 a max_df e restituisce la media RMSE per ognuno
 evaluate_df <- function(max_df, dati, fold_vettore, response, vars_ns, vars_bs, K) {
   
-  mse_per_df <- c()   # vettore vuoto, lo riempiamo ad ogni iterazione
+  rmse_per_df <- c()   # vettore vuoto, lo riempiamo ad ogni iterazione
   
   for (i in 3:max_df) {   # le {} racchiudono TUTTO il corpo del loop
     
-    mse_spline <- kfold_spline(
+    rmse_spline <- kfold_spline(
       dati         = dati,        # usa il parametro, non la variabile globale
       fold_vettore = fold_vettore,
       var_y        = response,
@@ -374,36 +375,36 @@ evaluate_df <- function(max_df, dati, fold_vettore, response, vars_ns, vars_bs, 
       K            = K
     )
     
-    mse_per_df <- c(mse_per_df, mean(mse_spline))  # append la media di questo df
+    rmse_per_df <- c(rmse_per_df, mean(rmse_spline))  # append la media di questo df
   }
   
-  return(mse_per_df)  # restituisce un vettore lungo (max_df - 2)
+  return(rmse_per_df)  # restituisce un vettore lungo (max_df - 2)
 }
 
 
-# Plotta MSE medio (y) al variare del df della spline (x)
-plot_mse_vs_df <- function(mse_per_df, max_df) {
+# Plotta RMSE medio (y) al variare del df della spline (x)
+plot_rmse_vs_df <- function(rmse_per_df, max_df) {
   
   # Costruiamo il dataframe per ggplot:
   # df_values = 3, 4, 5, ..., max_df  (i gradi testati)
-  # mse_values = la media MSE corrispondente
+  # rmse_values = la media RMSE corrispondente
   df_plot <- data.frame(
     df_values  = 3:max_df,
-    mse_values = mse_per_df
+    rmse_values = rmse_per_df
   )
   
-  grafico <- ggplot(df_plot, aes(x = df_values, y = mse_values)) +
+  grafico <- ggplot(df_plot, aes(x = df_values, y = rmse_values)) +
     geom_line(color = "steelblue", linewidth = 1) +   # linea che collega i punti
     geom_point(color = "steelblue", size = 3) +        # un punto per ogni df testato
-    # geom_vline traccia una linea verticale sul df con MSE minimo
-    geom_vline(xintercept = df_plot$df_values[ which.min(df_plot$mse_values) ],
+    # geom_vline traccia una linea verticale sul df con RMSE minimo
+    geom_vline(xintercept = df_plot$df_values[ which.min(df_plot$rmse_values) ],
                linetype = "dashed", color = "red") +
     # which.min() restituisce l'indice del valore minimo nel vettore
     labs(
-      title   = "MSE medio al variare del df della spline",
-      x       = "dfs of Freedom (df)",
-      y       = "MSE medio (K-Fold CV)",
-      caption = "Linea rossa tratteggiata = df ottimale (MSE minimo)"
+      title   = "Mean RMSE as df increases",
+      x       = "Degrees of Freedom (df)",
+      y       = "Mean RMSE (K-Fold CV)",
+      #caption = "Red dotted line = optimal df (min RMSE)"
     ) +
     scale_x_continuous(breaks = 3:max_df) +  # un tick per ogni df testato
     theme_minimal(base_size = 13) +
@@ -456,14 +457,14 @@ formula_lineare <- as.formula(
 )
 
 # --- STEP 5: K-Fold CV per entrambi i modelli ---
-mse_lineare <- kfold_regressione_lineare(
+rmse_lineare <- kfold_regressione_lineare(
   dati            = train,
   fold_vettore    = fold_vettore,
   formula_modello = formula_lineare,
   K               = K
 )
 
-mse_spline <- kfold_spline(
+rmse_spline <- kfold_spline(
   dati         = train,
   fold_vettore = fold_vettore,
   var_y        = response,
@@ -476,10 +477,10 @@ mse_spline <- kfold_spline(
 
 # --- STEP 6: Riepilogo CV ---
 cat("========================================================\n")
-cat("RIEPILOGO MEDIA MSE DALLA K-FOLD CV:\n")
-cat(sprintf("  Regressione Lineare : %.4f\n", mean(mse_lineare)))
-cat(sprintf("  Spline (df=3)       : %.4f\n", mean(mse_spline)))
-cat("Il modello con MSE più basso è il migliore in cross-validation.\n\n")
+cat("RIEPILOGO MEDIA RMSE DALLA K-FOLD CV:\n")
+cat(sprintf("  Regressione Lineare : %.4f\n", mean(rmse_lineare)))
+cat(sprintf("  Spline (df=3)       : %.4f\n", mean(rmse_spline)))
+cat("Il modello con RMSE più basso è il migliore in cross-validation.\n\n")
 
 # --- STEP 7: Valutazione finale sul test set ---
 cat("========================================================\n")
@@ -509,18 +510,18 @@ cat("\n========================================================\n")
 cat("CREAZIONE BOXPLOT DI CONFRONTO...\n")
 
 grafico <- crea_boxplot_confronto(
-  lista_mse = list(
-    "Regressione Lineare" = mse_lineare,
-    "Spline (df=3)"       = mse_spline
+  lista_rmse = list(
+    "Linear Regression" = rmse_lineare,
+    "Spline (df=3)"       = rmse_spline
   ),
-  titolo = "Confronto MSE - K-Fold CV (K=5)"
+  titolo = "RMSE - K-Fold CV (K=5)"
 )
 
 print(grafico)
 
 max_df <- 9
 
-mse_per_df <- evaluate_df(
+rmse_per_df <- evaluate_df(
   max_df       = max_df,
   dati         = train,
   fold_vettore = fold_vettore,
@@ -530,9 +531,9 @@ mse_per_df <- evaluate_df(
   K            = K
 )
 
-cat("df ottimale:", which.min(mse_per_df) + 2, "\n")
+cat("df ottimale:", which.min(rmse_per_df) + 2, "\n")
 
-grafico_df <- plot_mse_vs_df(mse_per_df, max_df)
+grafico_df <- plot_rmse_vs_df(rmse_per_df, max_df)
 print(grafico_df)
 
 cat("\n✓ Analisi completata!\n")
