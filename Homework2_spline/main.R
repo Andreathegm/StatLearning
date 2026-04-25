@@ -15,9 +15,10 @@ modello_regressione_full <- lm(rm ~ . , data =  data_pulito)
 
 
 step_aic <- stepAIC(modello_regressione_full, direction = "backward")
-class(step_aic)
-summary(step_aic)
 
+summary(step_aic)
+AIC(step_aic)
+deviance(step_aic)
 qqnorm(residuals(step_aic))
 qqline(residuals(step_aic), col = "red")
 
@@ -37,3 +38,5 @@ qqline(residuals(fit_gam), col = "red")
 
 plot(fit_gam,residuals = TRUE,pch = 16,col = "#905E9F",se = TRUE)
 summary(fit_gam)
+
+

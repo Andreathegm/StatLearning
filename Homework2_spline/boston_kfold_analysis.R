@@ -151,7 +151,7 @@ kfold_regressione_lineare <- function(dati, fold_vettore, formula_modello, K = 5
 #' Perché due tipi di spline?
 #'   - ns() (Natural Spline): si comporta linearmente FUORI dai nodi di
 #'     confine → stabile in K-Fold. Usarla per la maggior parte delle variabili.
-#'   - bs() (B-Spline): con df=degree=3 non piazza nodi interni → non crasha
+#'   - bs() (B-Spline): con df=df=3 non piazza nodi interni → non crasha
 #'     su variabili con pochi valori distinti (es. zn che è quasi tutta zeri).
 #'
 #' Esempio con vars_ns=c("lstat","nox"), vars_bs=c("zn"), vars_lineari=c("crim"):
@@ -205,7 +205,7 @@ costruisci_formula_spline <- function(var_y,
 #' @param vars_ns      Variabili da avvolgere con ns()
 #' @param vars_bs      Variabili da avvolgere con bs() (default: NULL)
 #' @param vars_lineari Variabili da tenere lineari (default: NULL)
-#' @param df_spline    Gradi di libertà delle spline (default: 4)
+#' @param df_spline Grado della spline (default: 4)
 #' @param K            Numero di fold
 #'
 #' @return Vettore di K valori MSE (uno per fold)
@@ -266,7 +266,7 @@ kfold_spline <- function(dati, fold_vettore, var_y,
 #' @param vars_ns      Variabili con ns() (solo se tipo="spline")
 #' @param vars_bs      Variabili con bs() (solo se tipo="spline", default: NULL)
 #' @param vars_lineari Variabili lineari (solo se tipo="spline", default: NULL)
-#' @param df_spline    Gradi di libertà spline (solo se tipo="spline")
+#' @param df_spline    Gradi della spline (solo se tipo="spline")
 #'
 #' @return Lista con $modello, $previsioni, $mse_test
 valuta_su_test <- function(train, test, tipo_modello, var_y,
@@ -401,7 +401,7 @@ plot_mse_vs_df <- function(mse_per_df, max_df) {
     # which.min() restituisce l'indice del valore minimo nel vettore
     labs(
       title   = "MSE medio al variare del df della spline",
-      x       = "Degrees of Freedom (df)",
+      x       = "dfs of Freedom (df)",
       y       = "MSE medio (K-Fold CV)",
       caption = "Linea rossa tratteggiata = df ottimale (MSE minimo)"
     ) +
