@@ -37,11 +37,11 @@ sigma <- 1
 
 Y <- X %*% beta + rnorm(n, sd = sigma)
 
-set.seed(17)
 fit.multi <- hdi(
   x= X,
   y= Y,
   B=1,
+  gamma= c(1),
   verbose = TRUE
 )
 
