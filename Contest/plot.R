@@ -9,6 +9,10 @@ plot_pvalue_ecdf <- function(data,
   
   max_val <- max(data)
   
+  if (max_val <= alpha) {
+    max_val = 0.15
+  }
+  
   if (is.null(breaks_seq)) {
     breaks_seq <- seq(0, max_val, length.out = n_bins + 1)
   }

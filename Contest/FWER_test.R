@@ -11,17 +11,17 @@ res_single <- data.frame(TP = numeric(N_mc),FP = numeric(N_mc),
 res_multi  <- data.frame(TP = numeric(N_mc), FP = numeric(N_mc),
                          FWER_ind = numeric(N_mc),FDR = numeric(N_mc))
 
-active <- sample(1:p, s0)
-active <- sort(active)
-
-beta <- rep(0, p)
-beta[active] <- runif(s0, 1, 5)
 
 # --- START MONTE CARLO SIMULATION ---
 for (i in seq_len(N_mc)) {
   cat(sprintf("Running iteration %d of %d...\n", i, N_mc))
   
   X <- generate_data(n_obs = n_obs,n_var = p)
+  active <- sample(1:p, s0)
+  active <- sort(active)
+  
+  beta <- rep(0, p)
+  beta[active] <- runif(s0, 0.1, 0.5)
   Y <- linear_dgp(X,beta,n_obs,1)
   
   # 2. Single Split model (B = 1) with gamma = c(1)
@@ -56,4 +56,5 @@ print(expected_single)
 
 paste0("\n--- EXPECTED METRICS (Multi Split, B = ",B,") ---\n")
 print(expected_multi)
+return (list(res_single=res_single, res_multi=res_multi))
 }

@@ -2,7 +2,7 @@ source("plot.R")
 source("multisplit.R")
 source("utils.R")
 
-ECDF_test <- function(n_obs,p,B,s0,alpha,print_only_active_var = TRUE){
+ECDF_test <- function(n_obs,p,B,s0,alpha,break_seq = NULL, n_bin=10,print_only_active_var = TRUE){
   
   
 active <- sample(1:p, s0) # num of variables that are active
@@ -33,7 +33,9 @@ if (print_only_active_var){
   
 for (i in indexes)
   plot_pvalue_ecdf(
-        as.numeric(p_values_dataframe[i,]),
+        data = as.numeric(p_values_dataframe[i,]),
+        breaks_seq = break_seq,
+        n_bins= n_bin,
         main_title = paste0("ecdf of variable",i)
       )
   
