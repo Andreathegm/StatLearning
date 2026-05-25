@@ -2,21 +2,25 @@ source("plot.R")
 source("multisplit.R")
 source("utils.R")
 
-ECDF_test <- function(n_obs,p,B,s0,alpha,break_seq = NULL, n_bin=10,print_only_active_var = TRUE){
+ECDF_test <- function(n_obs,p,B,s0,alpha,snr,break_seq = NULL, n_bin=10,print_only_active_var = TRUE){
   
   
 active <- sample(1:p, s0) # num of variables that are active
 active <- sort(active)
-
+print(active)
 
 beta <- rep(0, p)
-beta[active] <- runif(s0, 1, 5)
+beta[active] <- runif(s0, 1, s0)
 
 ####    MULTI-SPLIT done by 'our hands' to calculate p_value
 ####    distribution for each variable j for j in [1,p]
 
 X <- generate_data(n_obs = n_obs,n_var = p)
-Y <- linear_dgp(X,beta,n_obs,1)
+signal <- X %*% beta
+var_signal <- var(signal)          # Varianza empirica del segnale Var(X*beta)
+sigma <- sqrt(var_signal / snr)
+Y <- linear_dgp(X,beta,n_obs,sigma)
+
 p_values_dataframe <- multisplit(
     x = X,
     y = Y,

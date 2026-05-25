@@ -9,10 +9,6 @@ plot_pvalue_ecdf <- function(data,
   
   max_val <- max(data)
   
-  if (max_val <= alpha) {
-    max_val = 0.15
-  }
-  
   if (is.null(breaks_seq)) {
     breaks_seq <- seq(0, max_val, length.out = n_bins + 1)
   }
@@ -28,6 +24,7 @@ plot_pvalue_ecdf <- function(data,
        axes = FALSE,                  
        xlab = x_label,
        ylab = "Frequencies / ECDF / f(p)",
+       checks.lab = 2.0,
        main = main_title)
   
   axis(1, at = signif(breaks_seq, 3))            

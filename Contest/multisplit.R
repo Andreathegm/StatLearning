@@ -5,6 +5,7 @@ multisplit <- function(x, y, alpha, B) {
   pvals_mat <- matrix(NA, nrow = p, ncol = B)
   
   for (i in seq_len(B)) {
+    cat(sprintf("Split iteration %d of %d...\n", i, B))
     res <- one_split(x, y, alpha = alpha)
     pvals_mat[, i] <- res$pval
   }

@@ -3,7 +3,7 @@ generate_data <- function(n_obs,n_var){
   data <- huge.generator(
     n = n_obs,
     d = n_var,
-    graph = "hub",     
+    graph = "random",     
     v = 0.3,
     u = 0.1
   )

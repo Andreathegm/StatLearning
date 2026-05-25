@@ -3,7 +3,7 @@ source("utils.R")
 ###    Using third-party multi-split to get E[FP] (expectation of false positive)
 ###    E[TP] , E[FP/(TP+FP) , E[Indicator of at least 1 false positive]]
 
-FWER_test <- function(n_obs,p,B,s0,alpha,N_mc){
+FWER_test <- function(n_obs,p,B,s0,alpha,N_mc, snr){
 
 # Initialize data frames for storing results
 res_single <- data.frame(TP = numeric(N_mc),FP = numeric(N_mc), 
@@ -21,8 +21,12 @@ for (i in seq_len(N_mc)) {
   active <- sort(active)
   
   beta <- rep(0, p)
-  beta[active] <- runif(s0, 0.1, 0.5)
-  Y <- linear_dgp(X,beta,n_obs,1)
+  beta[active] <- runif(s0, 1, s0)
+  signal <- X %*% beta
+  var_signal <- var(signal)          # Varianza empirica del segnale Var(X*beta)
+  sigma <- sqrt(var_signal / snr)
+  Y <- linear_dgp(X,beta,n_obs,sigma)
+
   
   # 2. Single Split model (B = 1) with gamma = c(1)
   fit.single <- hdi(x = X, 

@@ -6,7 +6,7 @@ one_split <- function(x, y, alpha= 0.05){
   n <- nrow(x)
   p <- ncol(x)
 
-  idx.sel <- sample(seq_len(n), floor(n/2))
+  idx.sel <- sample(seq_len(n), floor((n-1)/2))
   
   idx.inf <- setdiff(seq_len(n), idx.sel)
   
