@@ -5,6 +5,8 @@ run_simulation_benchmark <- function(n_sims = 200, n_obs = 250, effect = "hetero
   all_results <- list()
   
   for (i in 1:n_sims) {
+    print(paste0("Simulation",i,"/",n_sims))
+ 
     
     sim_data <- dgp(n = n_obs, effect_type = effect, functional_form = form)
     

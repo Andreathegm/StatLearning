@@ -11,18 +11,12 @@ run_bart_method <- function(data) {
   X_test1 <- as.matrix(cbind(data$X, Z = 1))
   X_test0 <- as.matrix(cbind(data$X, Z = 0))
   
-  # Fit separati invece di rbind
-  fit1 <- wbart(x.train = X_train, y.train = data$Y, 
-                x.test = X_test1,
+  fit_bart <- wbart(x.train = X_train, y.train = data$Y, 
+                x.test = rbind(X_test1, X_test0),
                 nskip = 250, ndpost = 1000,printevery = 100)
-  yhat_1 <- fit1$yhat.test
-  rm(fit1); gc()
-  
-  fit0 <- wbart(x.train = X_train, y.train = data$Y, 
-                x.test = X_test0,
-                nskip = 250, ndpost = 1000, printevery = 100)
-  yhat_0 <- fit0$yhat.test
-  rm(fit0); gc()
+  n <- length(data$Y)
+  yhat_1 <- fit_bart$yhat.test[, 1:n]
+  yhat_0 <- fit_bart$yhat.test[, (n + 1):(2 * n)]
   
   cate_samples <- yhat_1 - yhat_0
   
@@ -55,7 +49,7 @@ run_ps_bart_method <- function(data) {
   
   fit_ps_bart <- wbart(x.train = X_train, y.train = data$Y, 
                        x.test = rbind(X_test1, X_test0),
-                       nskip = 100, ndpost = 200, pr = FALSE)
+                       nskip = 250, ndpost = 1000)
   
   n <- length(data$Y)
   yhat_1 <- fit_ps_bart$yhat.test[, 1:n]
@@ -94,7 +88,7 @@ run_bcf_method <- function(data) {
   # Il pacchetto implementa internamente l'architettura dettagliata nel paper:
   # assegna priori diversi e più penalizzanti su tau rispetto a mu[cite: 392, 393].
   fit_bcf <- bcf(y = data$Y, z = data$Z, x_control = X_matrix, x_moderate = X_matrix, 
-                 pihat = pi_hat, nburn = 100, nsim = 200)
+                 pihat = pi_hat, nburn = 250, nsim = 1000,verbose = FALSE,no_output = TRUE,n_chains = 1)
   
   # Nel modello bcf, l'effetto condizionato tau è un parametro esplicito [cite: 357]
   # fit_bcf$tau estrae direttamente i campioni MCMC dell'effetto del trattamento
