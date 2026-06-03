@@ -3,14 +3,22 @@ source("run_benchmark.R")
 source("simulation_study.R")
 
 my_real_methods <- list(
-  "BART"     = run_bart_method,
-  "ps-BART"  = run_ps_bart_method,
-  "BCF"      = run_bcf_method
+  "BART"     = run_bart_method
+  #"ps-BART"  = run_ps_bart_method,
+  #"BCF"      = run_bcf_method
 )
 
+# Genera un dataset singolo
+#sim_data <- dgp(n = 100, effect_type = "heterogeneous", functional_form = "linear")
+# Testa i metodi uno alla volta
+#result_ps   <- run_ps_bart_method(sim_data)   # o qui?
+#result_bcf  <- run_bcf_method(sim_data)       # o qui?
+
+
+
 set.seed(1234)
-comparion_table <- run_simulation_benchmark(
-  n_sims = 50, 
+comparison_table <- run_simulation_benchmark(
+  n_sims = 200, 
   n_obs = 250, 
   effect = "heterogeneous", 
   form = "linear", 

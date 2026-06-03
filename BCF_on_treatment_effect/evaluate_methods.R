@@ -7,7 +7,7 @@ evaluate_method <- function(true_data, method_results) {
   # ATE metrics
   ate_rmse  <- rmse(true_ate, method_results$ATE$est)
   ate_cover <- coverage(true_ate, method_results$ATE$lower, method_results$ATE$upper)
-  ate_len   <- coverage_lenght(method_results$ATE$lower, method_results$ATE$upper)
+  ate_len   <- avarage_coverage_length(method_results$ATE$lower, method_results$ATE$upper)
   
   # CATE metrics
   cate_rmse  <- rmse(true_cate, method_results$CATE$est)
