@@ -42,7 +42,3 @@ dgp<- function(n = 250, effect_type = "homogeneous", functional_form = "linear")
     tau_true = tau       # treatment effect
   ))
 }
-
-sim <- dgp()
-dati_X <- sim$X
-dati_Y <- sim$Y
