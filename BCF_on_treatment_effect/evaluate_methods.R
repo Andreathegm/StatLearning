@@ -1,4 +1,5 @@
 source("utils.R")
+
 evaluate_method <- function(true_data, method_results) {
   
   true_cate <- true_data$tau_true
