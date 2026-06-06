@@ -133,3 +133,26 @@ dgp_enriched<- function(n = 250, effect_type = "homogeneous", functional_form = 
     tau_true = tau       # treatment effect
   ))
 }
+#### to replicate diagonal effect
+
+dgp_simple <- function(n = 250, tau = -1) {
+  x1 <- runif(n, 0, 1)
+  x2 <- runif(n, 0, 1)
+  
+  mu <- 3 * (x1 - x2)
+  
+  pi_x <- 0.8 * pnorm(mu / (0.1*(2 - x1 - x2) + 0.25)) + 
+    0.025*(x1 + x2) + 0.05
+  
+  z   <- rbinom(n, 1, pi_x)
+  y   <- mu - tau * z + rnorm(n)
+  
+  return(list(
+    X        = data.frame(x1, x2),
+    Y        = y,
+    Z        = z,
+    pi_true  = pi_x,
+    mu_true  = mu,
+    tau_true = rep(tau, n)
+  ))
+}
