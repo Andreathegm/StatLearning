@@ -21,7 +21,7 @@ estimate_pi = function(X, Z) {
 # n_simulations = 50
 # nskip_grid = c(250,500,1000)
 n_simulations = 50
-nskip_grid = c(250,500,100)
+nskip_grid = c(250,500,1000)
 ndpost_fixed = 2000
 
 # Define the list of experiments (DGPs) to run sequentially

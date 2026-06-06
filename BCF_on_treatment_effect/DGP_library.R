@@ -143,10 +143,10 @@ dgp_enriched <- function(n, seed, effect_type = "homogeneous", functional_form =
   return(generate_data_universal(n, seed, gen_X_complex, calc_mu, calc_tau, calc_pi, sd_error = 1))
 }
 
-ht_nl_dgp <- function(n,seed){
+ht_l_dgp <- function(n,seed){
   return(dgp(n, seed, effect_type = "ht", functional_form = "linear"))
 }
 
-ht_l_dgp <- function(n,seed){
+ht_nl_dgp <- function(n,seed){
   return(dgp(n, seed, effect_type = "ht", functional_form = "nl"))
 }
