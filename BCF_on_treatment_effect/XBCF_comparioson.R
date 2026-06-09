@@ -56,7 +56,7 @@ prepare_xbcf_matrix <- function(X) {
 # HELPER: Estimate propensity score via BART
 # ==========================================
 estimate_pi <- function(X, Z) {
-  fit <- bart(x.train = as.matrix(X), y.train = Z, verbose = FALSE)
+  fit <- bart(x.train = as.matrix(X), y.train = Z,ndpost = 1000, nskip = 500,verbose = FALSE)
   pmin(pmax(colMeans(pnorm(fit$yhat.train)), 0.01), 0.99)
   # NOTE: dbarts returns yhat on probit scale for binary outcomes,
   #       so we apply pnorm() to convert to probabilities.
@@ -65,13 +65,13 @@ estimate_pi <- function(X, Z) {
 # ==========================================
 # Experiment Settings
 # ==========================================
-n_simulations <- 1
+n_simulations <- 100
 
 # XBCF hyperparameters
 # num_sweeps = total MCMC iterations; burnin = warm-up to discard
 # Effective posterior draws = num_sweeps - burnin
-xbcf_num_sweeps <- 1000
-xbcf_burnin     <- 2000   # must be strictly < num_sweeps
+xbcf_num_sweeps <- 2000
+xbcf_burnin     <- 1000   # must be strictly < num_sweeps
 
 # BART hyperparameters (kept for vanilla BART and PS-BART)
 nskip_grid   <- c(1000)
@@ -102,9 +102,9 @@ ndpost_fixed <- 2000
 
 experiments_to_run <- c(
   "dgp_paper_example1",
-  "dgp_enriched"
-  #"ht_l_dgp",
-  #"ht_nl_dgp"
+  "dgp_enriched",
+  "ht_l_dgp",
+  "ht_nl_dgp"
 )
 
 # ==========================================
@@ -412,7 +412,7 @@ for (dgp_name in experiments_to_run) {
   plot(NULL, xlim = axis_lim, ylim = axis_lim,
        xlab = expression(tau ~ "true"),
        ylab = expression(hat(tau) ~ "estimated"),
-       main = paste0("True vs Estimated CATE ŌĆö ", dgp_name),
+       main = paste0("True vs Estimated CATE ", dgp_name),
        las = 1)
   
   # Linea diagonale perfetta
