@@ -19,5 +19,4 @@ for (dgp in dgps) {
 
 head(data)
 
-# (Opzionale) Salva il risultato combinato
 write.csv(data, file.path(dir, "all_data.csv"), row.names = FALSE)

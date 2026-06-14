@@ -36,7 +36,7 @@ suppressPackageStartupMessages({
 ACTIVE_DGP   <- "targeted_selection"   # change this to run one specific DGP
 # To run all DGPs in one batch, see the block at the end of the file.
 
-N_MC     <- 50                     # Monte Carlo replications
+N_MC     <- 100                     # Monte Carlo replications
 N        <- 250                    # sample size
 
 # BART / ps-BART
@@ -55,6 +55,51 @@ set.seed(1234)
 # =============================================================================
 #  SECTION 1: DGPs
 # =============================================================================
+dgp_bcf_winner_fixed <- function(n, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  X <- matrix(rnorm(n * 5), nrow = n, ncol = 5)
+  colnames(X) <- paste0("x", 1:5)
+  
+  mu <- sin(pi * X[,"x1"]) + X[,"x2"]
+  
+  pi_raw <- pnorm(mu - 0.5 * X[,"x4"])
+  pi_true <- pmin(pmax(pi_raw, 0.05), 0.95)
+  Z <- rbinom(n, 1, pi_true)
+  
+  tau_true <- 0.5 + 0.5 * X[,"x4"]
+  
+  Y <- mu + tau_true * Z + rnorm(n, 0, 1)
+  
+  list(X = X, Z = Z, Y = Y, mu_true = mu, pi_true = pi_true, 
+       tau_true = tau_true, sigma_true = 1, ATE_true = mean(tau_true),
+       dgp_label = "BCF Winner Fixed", tau_type  = "heterogeneous")
+}
+
+dgp_bcf_winner <- function(n, seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+  
+  X <- matrix(rnorm(n * 5), nrow = n, ncol = 5)
+  colnames(X) <- paste0("x", 1:5)
+  
+  mu <- 3 * sin(X[,"x1"]) + 2 * X[,"x2"]^2 - 2 * X[,"x3"]
+  
+  pi_raw <- pnorm(0.6 * mu - 0.2 * X[,"x4"])
+  pi_true <- pmin(pmax(pi_raw, 0.05), 0.95)
+  
+  Z <- rbinom(n, 1, pi_true)
+  
+  tau_true <- 0.2 + 0.3 * X[,"x4"]
+  
+  Y <- mu + tau_true * Z + rnorm(n, 0, 1)
+  
+  list(
+    X = X, Z = Z, Y = Y,
+    mu_true = mu, pi_true = pi_true, tau_true = tau_true,
+    sigma_true = 1, ATE_true = mean(tau_true),
+    dgp_label = "BCF Winner (High Confounding, Small Tau)",
+    tau_type  = "heterogeneous"
+  )
+}
 
 dgp_no_confounding <- function(n, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
@@ -206,6 +251,8 @@ generate_data <- function(n, seed, dgp_name) {
          "paper_example1"     = dgp_paper_example1(n, seed),
          "ht_nl_clean"        = dgp_ht_nl_clean(n, seed),
          "ht_nl"              = dgp_ht_nl(n, seed),
+         "dgp_bcf_winner"     = dgp_bcf_winner(n,seed),
+         "dgp_winner_fixed"   = dgp_bcf_winner_fixed(n,seed),
          stop("DGP not recognized.")
   )
 }
@@ -319,7 +366,7 @@ compute_metrics <- function(fit_out, dat) {
 # =============================================================================
 #  SECTION 3: MAIN EXPERIMENT FUNCTION (one DGP)
 # =============================================================================
-run_experiment <- function(dgp_name, n_mc = N_MC, n_obs = N, seed_base = 1234) {
+run_experiment <- function(dgp_name, n_mc = N_MC, n_obs = N, seed_base = 1234,use_pi_true = TRUE) {
   
   cat(strrep("=", 65), "\n")
   cat(sprintf("  SIMULATION — DGP: '%s'\n", dgp_name))
@@ -346,9 +393,17 @@ run_experiment <- function(dgp_name, n_mc = N_MC, n_obs = N, seed_base = 1234) {
     dat <- generate_data(n = n_obs, seed = seed_base + r, dgp_name = dgp_name)
     
     # Shared propensity score estimation via BART
-    ps_fit <- bart(x.train = dat$X, y.train = dat$Z,
-                   ndpost = 400, nskip = 100, ntree = 50, verbose = FALSE)
-    pi_hat <- colMeans(pnorm(ps_fit$yhat.train))
+    if (!use_pi_true){
+      print("estimating pi")
+      ps_fit <- bart(x.train = dat$X, y.train = dat$Z,
+                     ndpost = 400, nskip = 100, ntree = 50, verbose = FALSE)
+      pi_hat <- colMeans(pnorm(ps_fit$yhat.train))
+      
+    }
+    else{
+      print("Using pi true...")
+      pi_hat <- dat$pi_true
+    }
     
     bart_out   <- tryCatch(fit_bart_naive(dat), error = function(e) NULL)
     psbart_out <- tryCatch(fit_ps_bart(dat, pi_hat), error = function(e) NULL)
@@ -461,16 +516,17 @@ run_experiment <- function(dgp_name, n_mc = N_MC, n_obs = N, seed_base = 1234) {
     summarise(cov = mean(ate_covered), .groups = "drop")
   
   p3 <- results_mc %>%
-    ggplot(aes(x = replication, y = ate_covered, color = method)) +
-    geom_line(alpha = 0.3) +
-    geom_hline(data = ate_cov_avg, aes(yintercept = cov, color = method),
-               linewidth = 1.3) +
+    arrange(replication) %>%
+    group_by(method) %>%
+    mutate(cum_cov = cummean(ate_covered)) %>%
+    ggplot(aes(x = replication, y = cum_cov, color = method)) +
+    geom_line(linewidth = 0.9) +
     geom_hline(yintercept = 0.95, linetype = "dashed", color = "black") +
-    scale_color_manual(values = pal) + scale_y_continuous(limits = c(0, 1.02)) +
-    labs(title = "ATE coverage per MC replication",
-         subtitle = "Horizontal lines = MC averages; dashed = 95%",
-         x = "Replication", y = "ATE coverage", color = NULL) +
-    theme_paper + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+    scale_color_manual(values = pal) +
+    scale_y_continuous(limits = c(0, 1.02)) +
+    labs(title = "cumulative ATE",
+         x = "Replication", y = "Cumulative Cover", color = NULL) +
+    theme_paper
   
   p4 <- results_mc %>%
     ggplot(aes(x = ate_bias, fill = method, color = method)) +
@@ -509,14 +565,22 @@ run_experiment <- function(dgp_name, n_mc = N_MC, n_obs = N, seed_base = 1234) {
          x = "Estimated PS", y = "Density", fill = NULL, color = NULL) + theme_paper
   
   p7 <- cal_df %>%
-    ggplot(aes(x = mean_ps_hat)) +
+    pivot_longer(cols = c(obs_rate, mean_pi_true),
+                 names_to  = "series",
+                 values_to = "prob") %>%
+    mutate(series = recode(series,
+                           "obs_rate"     = "observed π",
+                           "mean_pi_true" = "true π"
+    )) %>%
+    ggplot(aes(x = mean_ps_hat, y = prob, color = series)) +
+    geom_line(linewidth = 0.9) +
+    geom_point(size = 3) +
     geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "black") +
-    geom_line(aes(y = obs_rate), color = "#E05C5C", alpha = 0.7) +
-    geom_line(aes(y = mean_pi_true), color = "#3A86FF", alpha = 0.7) +
-    geom_point(aes(y = obs_rate), color = "#E05C5C", size = 3, shape = 17) +
-    geom_point(aes(y = mean_pi_true), color = "#3A86FF", size = 3, shape = 16) +
+    scale_color_manual(values = c("observed π" = "#E05C5C",
+                                  "true π"          = "#3A86FF")) +
     labs(title = "PS calibration plot",
-         x = "Mean estimated PS (decile)", y = "Probability") + theme_paper
+         x = "PS stimato medio (decile)", y = "Probabilità", color = NULL) +
+    theme_paper
   
   ts_df <- data.frame(
     mu = dat_demo$mu_true, pi_true = dat_demo$pi_true,
@@ -528,7 +592,7 @@ run_experiment <- function(dgp_name, n_mc = N_MC, n_obs = N, seed_base = 1234) {
     geom_point(alpha = 0.4, size = 1.5) +
     geom_smooth(method = "loess", se = FALSE, linewidth = 1) +
     scale_color_manual(values = c("gray50", "#E05C5C")) +
-    labs(title = "Targeted Selection: μ(x) vs π(x)",
+    labs(title = sprintf("μ(x) vs π(x) — %s", dgp_name),
          x = "μ(x)", y = "π(x)", color = NULL) + theme_paper
   
   panel_B <- (p5 | p6) / (p7 | p8) +
@@ -561,23 +625,32 @@ run_experiment <- function(dgp_name, n_mc = N_MC, n_obs = N, seed_base = 1234) {
     scale_fill_manual(values = pal) +
     labs(title = "Posterior distribution of ATE", x = "ATE", y = "Density") + theme_paper
   
-  # Variable importance: BART naïve vs ps-BART (XBCF excluded here)
+  
   varimp_bart   <- colMeans(bart_demo$varcount)
   varimp_psbart <- colMeans(psbart_demo$varcount)
   
   varimp_df <- bind_rows(
-    data.frame(variable = names(varimp_bart),   count = varimp_bart,
-               method = "BART naïve"),
-    data.frame(variable = names(varimp_psbart), count = varimp_psbart,
-               method = "ps-BART")
+    data.frame(
+      variable = names(varimp_bart),
+      count    = varimp_bart / sum(varimp_bart),   
+      method   = "BART naïve"
+    ),
+    data.frame(
+      variable = names(varimp_psbart),
+      count    = varimp_psbart / sum(varimp_psbart),
+      method   = "ps-BART"
+    )
   )
   
   p_varimp <- varimp_df %>%
     ggplot(aes(x = reorder(variable, count), y = count, fill = method)) +
     geom_col(position = "dodge", alpha = 0.8, width = 0.6) +
-    coord_flip() + scale_fill_manual(values = pal) +
-    labs(title = "Variable importance — splitting rule count",
-         x = NULL, y = "Mean split count", fill = NULL) + theme_paper
+    coord_flip() +
+    scale_fill_manual(values = pal) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    labs(title    = "Variable importance",
+         x = NULL, y = "% split", fill = NULL) +
+    theme_paper
   
   panel_C <- (p_trace | p_post) / p_varimp +
     plot_annotation(title = "Panel C — MCMC Diagnostics and Variable Importance")
@@ -592,16 +665,15 @@ run_experiment <- function(dgp_name, n_mc = N_MC, n_obs = N, seed_base = 1234) {
   
   cat(sprintf("\n  ✓ Images saved in %s\n", img_dir))
   
-  # Return results invisibly for possible further use
   invisible(list(mc_results = results_mc, summary = summary_tbl))
 }
 
 # =============================================================================
 #  EXECUTION: single DGP (as set by ACTIVE_DGP)
 # =============================================================================
-dgp_list <- c("no_confounding", "targeted_selection", "paper_example1",
-              "ht_nl_clean", "ht_nl")
+dgp_list <- c("no_confounding","targeted_selection","paper_example1",
+  "ht_nl_clean","ht_nl","dgp_bcf_winner,dgp_winner_fixed")
 for (dgp in dgp_list) {
-  cat("\n\n>>> Starting DGP:", dgp, "\n")
-  run_experiment(dgp)
+   cat("\n\n>>> Starting DGP:", dgp, "\n")
+   run_experiment(dgp)
 }

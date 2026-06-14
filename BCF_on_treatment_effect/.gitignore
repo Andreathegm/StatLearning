@@ -2,6 +2,7 @@ results/
 .Rhistory
 .RData
 table_results/
+result_experiment/
 bin/
 trash/
 *.txt
